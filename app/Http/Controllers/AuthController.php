@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Helpers\ResponseHelper;
 
 class AuthController extends Controller
 {
@@ -56,19 +57,12 @@ class AuthController extends Controller
             ]);
 
             if ($validator->fails()) {
-                return response()->json([
-                    'status' => false,
-                    'message' => 'Validation error',
-                    'errors' => $validator->errors()
-                ], 422);
+                return ResponseHelper::error('Validation error', $validator->errors(), 422);
             }
                 $user = User::where('email', $request->email)->first();
 
                 if (!$user || !Hash::check($request->password, $user->password)) {
-                    return response()->json([
-                        'status' => false,
-                        'message' => 'Email or Password is wrong || Login failed'
-                    ], 401); //anauthentication
+                    return ResponseHelper::error('Invalid credential!!', '', 401);
                 }
 
                 $token = $user->createToken('auth_token')->plainTextToken;
@@ -81,11 +75,7 @@ class AuthController extends Controller
                     ]
                 ], 200);
         } catch (\Throwable $th) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Internal Server Error',
-                'error' => $th->getMessage() //boleh tidak diotf
-            ], 500);
+            return ResponseHelper::error('Internal Server Error', $th->getMessage(), 500);
         }
     }
 }

@@ -17,8 +17,8 @@ Route::get('/', function () {
 Route::post('register', [App\Http\Controllers\AuthController::class, 'registration']);
 Route::post('login', [App\Http\Controllers\AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::apiResource('users', App\Http\Controllers\UserController::class);
-});
-Route::apiResource('users', App\Http\Controllers\UserController::class);
+// Roles endpoint (public agar bisa diakses saat create user)
+Route::apiResource('roles', App\Http\Controllers\RoleController::class);
 
+// Users endpoint (public untuk development, tambahkan auth:sanctum untuk production)
+Route::apiResource('users', App\Http\Controllers\UserController::class);

@@ -17,6 +17,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
+            'role_id' => 'nullable|exists:roles,id',
         ]);
 
         if ($validator->fails()) {
@@ -31,12 +32,13 @@ class AuthController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => $request->password,
+            'role_id' => $request->role_id,
         ]);
 
         return response()->json([
             'status' => true,
             'message' => 'Registaration success',
-            'data' => $user
+            'data' => $user->load('role')
         ], 201);
         } catch (\Throwable $th) {
             return response()->json([

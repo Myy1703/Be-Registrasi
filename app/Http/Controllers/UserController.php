@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
-use App\Helpers\ResponseHelper;
 
 class UserController extends Controller
 {
@@ -14,7 +13,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::all();
+        $users = User::with('role')->get();
         return response()->json([
             'status' => true,
             'message' => 'Get user success',
@@ -32,6 +31,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|min:8',
+            'role_id' => 'nullable|exists:roles,id',
         ]);
 
         if ($validator->fails()) {
@@ -46,12 +46,13 @@ class UserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => $request->password,
+            'role_id' => $request->role_id,
         ]);
 
         return response()->json([
             'status' => true,
             'message' => 'Registaration success',
-            'data' => $user
+            'data' => $user->load('role')
         ], 201);
         } catch (\Throwable $th) {
             return response()->json([
@@ -67,7 +68,15 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        $user = User::find($id);
+        $user = User::with('role')->find($id);
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found',
+            ], 404);
+        }
+
         return response()->json([
             'status' => true,
             'message' => 'Get user success',
@@ -84,7 +93,8 @@ class UserController extends Controller
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|unique:users,email,' . $id,
-                'password' => 'required|min:6',
+                'password' => 'min:6',
+                'role_id' => 'nullable|exists:roles,id',
             ]);
 
             if ($validator->fails()) {
@@ -95,9 +105,19 @@ class UserController extends Controller
                 ], 422);
             }
 
+            $user = User::find($id);
+
+            if (!$user) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'User not found',
+                ], 404);
+            }
+
             $data = [
                 'name' => $request->name,
                 'email' => $request->email,
+                'role_id' => $request->role_id,
             ];
 
             //jika user ingin update/mengisi password
@@ -105,11 +125,12 @@ class UserController extends Controller
                 $data['password'] = $request->password;
             }
 
-            $user = User::find($id)->update($data);
+            $user->update($data);
+
             return response()->json([
                 'status' => true,
                 'message' => 'Update user success',
-                'data' => $user
+                'data' => $user->load('role')
             ], 200);
 
         } catch (\Throwable $th) {
@@ -126,11 +147,20 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        $user = User::find($id)->delete();
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        $user->delete();
+
         return response()->json([
             'status' => true,
             'message' => 'Delete user success',
-            'data' => $user
         ], 200);
     }
 }
